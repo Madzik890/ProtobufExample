@@ -1,3 +1,0 @@
-/home/msucharski/Documents/ProtoBufExample/build/CMakeFiles/rebuild_cache.dir
-/home/msucharski/Documents/ProtoBufExample/build/CMakeFiles/edit_cache.dir
-/home/msucharski/Documents/ProtoBufExample/build/CMakeFiles/ProtoBufExample.dir
