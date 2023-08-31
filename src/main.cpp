@@ -1,45 +1,46 @@
 #include <iostream>
 #include <fstream>
+#include <future>
+#include <grpc/grpc.h>
+#include <grpcpp/create_channel.h>
 
-#include "protocol/person.pb.h"
+#include "messagehub/messagehubimpl.hpp"
 
-int main() {
-    // Create a Person message
-    Person person;
-    person.set_name("Alice");
-    person.set_age(25);
-    person.set_email("alice@example.com");
+void clientFunc()
+{
+    grpc::ClientContext context;   
+    auto channel = grpc::CreateChannel("0.0.0.0:50051", grpc::InsecureChannelCredentials());
+    auto client = MessageHub::NewStub(channel);
 
-    // Serialize the Person message to a binary format
-    std::string serialized_data;
-    person.SerializeToString(&serialized_data);
+    Message message; 
+    message.set_nickname("Rogal DLL");
+    message.set_text("EBE EBE");
+    MessageResult result;
 
-    // Write the serialized data to a file
-    std::ofstream output_file("person_data.bin", std::ios::binary);
-    if (output_file.is_open()) {
-        output_file.write(serialized_data.c_str(), serialized_data.size());
-        output_file.close();
-    } else {
-        std::cerr << "Failed to open the output file." << std::endl;
-        return 1;
+    const auto status = client->Publish(&context, message, &result);
+    if(status.error_code() != grpc::StatusCode::OK) {
+        std::cerr << "Cannot publish message" << std::endl;
+        return;
     }
 
-    // Deserialize the data
-    Person deserialized_person;
-    std::ifstream input_file("person_data.bin", std::ios::binary);
-    if (input_file.is_open()) {
-        std::string serialized_data((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
-        deserialized_person.ParseFromString(serialized_data);
-        input_file.close();
-    } else {
-        std::cerr << "Failed to open the input file." << std::endl;
-        return 1;
-    }
+    std::cout << "Result of sending message: " << std::boolalpha << result.result() << std::endl;
+    if(!result.result()) std::cout << "Error message: " << result.error() << std::endl;
+}
 
-    // Print the deserialized Person message
-    std::cout << "Name: " << deserialized_person.name() << std::endl;
-    std::cout << "Age: " << deserialized_person.age() << std::endl;
-    std::cout << "Email: " << deserialized_person.email() << std::endl;
+int main() 
+{        
+    MessageHubImpl messageHubImpl;
+    grpc::ServerBuilder builder;    
+    builder.AddListeningPort("0.0.0.0:50051", grpc::InsecureServerCredentials());
+    builder.RegisterService(&messageHubImpl);
+
+    const auto server = builder.BuildAndStart();        
+    const auto clientTask = std::async(&clientFunc);
+    
+    if(!clientTask.valid()) return -1;
+    clientTask.wait();
+    server->Wait();    
 
     return 0;
 }
+

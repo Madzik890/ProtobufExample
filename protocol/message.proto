@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+option java_package = "ex.grpc";
+import "google/protobuf/empty.proto";
+
+service MessageHub {
+    rpc Publish(Message) returns (MessageResult) {}    
+}
+
+message Message {
+    required string nickname = 1;
+    required string text = 2;
+}
+
+message MessageResult {
+    required bool result = 1;
+    optional string error = 2;
+}

@@ -1,5 +1,3 @@
 [requires]
-protobuf/3.9.1
 
 [generators]
-cmake
